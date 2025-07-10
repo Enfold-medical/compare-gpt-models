@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>راهنمای جامع انتخاب مدل‌های هوش مصنوعی OpenAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as a task-oriented interactive guide. It moves away from the linear structure of the report to a user-centric flow. The core is the "Quick Selector" which immediately answers the user's primary question: "Which model is for me?". This is followed by a "Deep Dive Comparison" section with a filterable benchmark chart and feature comparison, allowing for detailed exploration. Finally, "Model Profiles" act as a reference. This structure prioritizes user decision-making, starting broad and allowing progressive disclosure of details, which is more effective for usability than a static report. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Model personas & capabilities -> Goal: Quick recommendation -> Viz: Interactive buttons + Radar Chart (Chart.js/Canvas) -> Interaction: Click -> Justification: Provides a fast, visual summary of a model's strengths tailored to a user's goal.
+        - Report Info: Quantitative benchmark data (Table 2) -> Goal: Compare performance -> Viz: Filterable Horizontal Bar Chart (Chart.js/Canvas) -> Interaction: Dropdown selection -> Justification: Transforms a dense static table into an engaging, focused visualization.
+        - Report Info: Detailed model descriptions (Sections 2-5) -> Goal: Provide in-depth reference -> Viz: Tabbed interface (HTML/CSS/JS) -> Interaction: Click tabs -> Justification: Organizes large amounts of text cleanly, preventing information overload and improving readability.
+        - Report Info: Pricing data (Table 3) -> Goal: Compare costs -> Viz: Styled cards/table (HTML/Tailwind) -> Interaction: Static view -> Justification: Presents crucial decision-making data in a clear, easily scannable format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #F8F5F2;
+            color: #434242;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button:hover {
+            background-color: #EAE3DC;
+            color: #2b2b2b;
+        }
+        .task-button.active {
+            background-color: #A89F95;
+            color: white;
+            transform: scale(1.05);
+        }
+        .tab-button.active {
+            border-bottom-color: #7D7C7A;
+            color: #2b2b2b;
+            font-weight: bold;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE3DC;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-[#434242] mb-2">راهنمای انتخاب مدل‌های هوش مصنوعی OpenAI</h1>
+            <p class="text-lg text-[#7D7C7A]">یک مقایسه تعاملی برای انتخاب ابزار مناسب برای کار شما</p>
+        </header>
+        
+        <nav class="sticky top-0 bg-[#F8F5F2]/80 backdrop-blur-sm z-10 mb-12 rounded-lg shadow-sm border border-gray-200">
+            <div class="flex justify-center items-center space-x-2 sm:space-x-4 reverse p-3">
+                <a href="#selector" class="nav-button text-sm sm:text-base px-3 py-2 rounded-md text-[#434242]">انتخاب سریع</a>
+                <a href="#comparison" class="nav-button text-sm sm:text-base px-3 py-2 rounded-md text-[#434242]">مقایسه جامع</a>
+                <a href="#profiles" class="nav-button text-sm sm:text-base px-3 py-2 rounded-md text-[#434242]">شناسنامه مدل‌ها</a>
+            </div>
+        </nav>
+
+        <main>
+            <!-- Section 1: Quick Selector -->
+            <section id="selector" class="mb-16 scroll-mt-24">
+                <h2 class="text-2xl font-bold text-center mb-2">انتخاب سریع مدل</h2>
+                <p class="text-center text-gray-600 mb-8">هدف اصلی خود را انتخاب کنید تا بهترین مدل به شما پیشنهاد شود.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="flex flex-col space-y-4">
+                        <h3 class="font-bold text-lg">هدف شما چیست؟</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                           <button data-task="realtime" class="task-button p-4 rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-gray-50 text-right">
+                               <span class="text-2xl">💬</span>
+                               <p class="font-bold mt-1">چت‌بات و تعامل آنی</p>
+                           </button>
+                           <button data-task="creative" class="task-button p-4 rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-gray-50 text-right">
+                               <span class="text-2xl">✍️</span>
+                               <p class="font-bold mt-1">نویسندگی و کار خلاق</p>
+                           </button>
+                           <button data-task="coding" class="task-button p-4 rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-gray-50 text-right">
+                               <span class="text-2xl">🛠️</span>
+                               <p class="font-bold mt-1">کدنویسی و توسعه نرم‌افزار</p>
+                           </button>
+                           <button data-task="research" class="task-button p-4 rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-gray-50 text-right">
+                               <span class="text-2xl">🔬</span>
+                               <p class="font-bold mt-1">تحقیق و استدلال پیچیده</p>
+                           </button>
+                           <button data-task="long_context" class="task-button p-4 rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-gray-50 text-right">
+                               <span class="text-2xl">📚</span>
+                               <p class="font-bold mt-1">تحلیل اسناد حجیم</p>
+                           </button>
+                        </div>
+                    </div>
+                    <div id="recommendation-card" class="card p-6 rounded-lg hidden">
+                        <h3 class="font-bold text-xl mb-2">مدل پیشنهادی: <span id="recommended-model-name"></span></h3>
+                        <p id="recommendation-text" class="text-gray-700 mb-4"></p>
+                        <div class="chart-container h-64 md:h-80">
+                            <canvas id="recommendation-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Deep Dive Comparison -->
+            <section id="comparison" class="mb-16 scroll-mt-24">
+                <h2 class="text-2xl font-bold text-center mb-8">مقایسه جامع مدل‌ها</h2>
+                
+                <div class="card p-6 rounded-lg mb-8">
+                     <h3 class="font-bold text-xl mb-4 text-center">مقایسه عملکرد در بنچمارک‌ها</h3>
+                     <div class="w-full max-w-sm mx-auto mb-4">
+                         <select id="benchmark-selector" class="w-full p-2 border border-gray-300 rounded-md bg-white">
+                             <option value="MMLU">استدلال عمومی (MMLU)</option>
+                             <option value="GPQA Diamond">علوم سطح خبره (GPQA)</option>
+                             <option value="HumanEval">کدنویسی پایتون (HumanEval)</option>
+                             <option value="SWE-bench Verified">مهندسی نرم‌افزار (SWE-bench)</option>
+                             <option value="IFEval">پیروی از دستورالعمل (IFEval)</option>
+                         </select>
+                     </div>
+                     <div class="chart-container max-w-4xl mx-auto">
+                         <canvas id="benchmark-chart"></canvas>
+                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Pricing Cards -->
+                    <div class="card p-5 rounded-lg text-center">
+                        <h4 class="font-bold text-lg">GPT-4o</h4>
+                        <p class="text-2xl font-bold my-2">$5<span class="text-sm font-normal">/ورودی</span></p>
+                        <p class="text-2xl font-bold">$15<span class="text-sm font-normal">/خروجی</span></p>
+                        <p class="text-xs text-gray-500 mt-1">به ازای ۱ میلیون توکن</p>
+                    </div>
+                    <div class="card p-5 rounded-lg text-center">
+                        <h4 class="font-bold text-lg">GPT-4.1</h4>
+                        <p class="text-2xl font-bold my-2">$2<span class="text-sm font-normal">/ورودی</span></p>
+                        <p class="text-2xl font-bold">$8<span class="text-sm font-normal">/خروجی</span></p>
+                        <p class="text-xs text-gray-500 mt-1">به ازای ۱ میلیون توکن</p>
+                    </div>
+                    <div class="card p-5 rounded-lg text-center">
+                        <h4 class="font-bold text-lg">o3</h4>
+                        <p class="text-2xl font-bold my-2">$10<span class="text-sm font-normal">/ورودی</span></p>
+                        <p class="text-2xl font-bold">$40<span class="text-sm font-normal">/خروجی</span></p>
+                        <p class="text-xs text-gray-500 mt-1">به ازای ۱ میلیون توکن</p>
+                    </div>
+                    <div class="card p-5 rounded-lg text-center bg-gray-100 opacity-70">
+                        <h4 class="font-bold text-lg">GPT-4.5</h4>
+                        <p class="text-2xl font-bold my-2">$75<span class="text-sm font-normal">/ورودی</span></p>
+                        <p class="text-2xl font-bold">$150<span class="text-sm font-normal">/خروجی</span></p>
+                        <p class="text-xs text-gray-500 mt-1">(در حال حذف)</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Section 3: Model Profiles -->
+            <section id="profiles" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-center mb-8">شناسنامه هر مدل</h2>
+                <div class="card rounded-lg p-6">
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-4 reverse" aria-label="Tabs">
+                            <button data-tab="gpt-4o" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 active">GPT-4o</button>
+                            <button data-tab="gpt-4.1" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">GPT-4.1</button>
+                            <button data-tab="o3" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">o3</button>
+                            <button data-tab="gpt-4.5" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">GPT-4.5</button>
+                        </nav>
+                    </div>
+
+                    <div id="tab-content">
+                        <!-- Content will be injected by JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 pt-8 border-t border-gray-200">
+             <p class="text-gray-600">این اپلیکیشن بر اساس گزارش تحلیلی جامع مدل‌های OpenAI ساخته شده است.</p>
+             <p class="text-sm text-gray-500 mt-1">طراحی و توسعه یافته برای ارائه یک تجربه تعاملی.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const modelData = {
+                'gpt-4o': {
+                    name: 'GPT-4o',
+                    persona: 'ارتباط‌گر چندوجهی 💬',
+                    description: 'پرچمدار همه‌کاره که تعادلی میان سرعت، هزینه و قابلیت‌های گسترده برقرار می‌کند. این مدل، انتخاب «پیش‌فرض» برای اکثر وظایف تعاملی و روزمره است.',
+                    strengths: ['سرعت و هزینه عالی', 'تعامل آنی و طبیعی (صدا، تصویر، متن)', 'پشتیبانی گسترده از زبان‌های مختلف'],
+                    weaknesses: ['سقف استدلال پایین‌تر از سری o', 'محدودیت در تولید تصاویر فوتورئالیستی', 'مستعد توهم در وظایف پیچیده'],
+                    capabilities: { speed: 9, cost: 9, creativity: 8, reasoning: 7, context: 6 }
+                },
+                'gpt-4.1': {
+                    name: 'GPT-4.1',
+                    persona: 'سازنده دقیق 🛠️',
+                    description: 'اسب کاری توسعه‌دهندگان که برای عملکرد برتر در کدنویسی و مدیریت زمینه‌های بسیار بزرگ (تا ۱ میلیون توکن) تخصص یافته است. ایده‌آل برای عامل‌های هوشمند و تحلیل داده‌های حجیم.',
+                    strengths: ['پنجره زمینه ۱ میلیون توکنی', 'عملکرد فوق‌العاده در کدنویسی', 'پیروی دقیق از دستورالعمل‌ها'],
+                    weaknesses: ['محدودیت توکن خروجی (۳۲ هزار)', 'کمتر خلاق و مکالمه‌ای', 'گزارش‌هایی از ناپایداری در نسخه‌های اولیه'],
+                    capabilities: { speed: 7, cost: 8, creativity: 6, reasoning: 8, context: 10 }
+                },
+                'o3': {
+                    name: 'o3',
+                    persona: 'متفکر عمیق 🧠',
+                    description: 'قهرمان استدلال که برای حداکثر دقت و قابلیت اطمینان در مسائل منطقی پیچیده و چندمرحله‌ای مهندسی شده است؛ جایی که صحت پاسخ غیرقابل‌مذاکره است.',
+                    strengths: ['دقت بی‌نظیر در ریاضیات و علوم', 'بهترین عملکرد در کدنویسی الگوریتمی', 'قابلیت اعتماد بالا در وظایf پرمخاطره'],
+                    weaknesses: ['سرعت پایین و هزینه بالا', 'برای وظایf عمومی و خلاقانه مناسب نیست', 'ممکن است پاسخ‌های بیش از حد کوتاه و سودمندگرایانه بدهد'],
+                    capabilities: { speed: 3, cost: 4, creativity: 5, reasoning: 10, context: 7 }
+                },
+                'gpt-4.5': {
+                    name: 'GPT-4.5',
+                    persona: 'هنرمند خلاق ✍️',
+                    description: 'یک مدل آزمایشی و گران‌قیمت که بر ظرافت‌های مکالمه «انسان‌مانند» و هوش هیجانی متمرکز بود. به عنوان یک فناوری گذرا عمل کرد و اکنون در حال حذف شدن است.',
+                    strengths: ['مکالمه بسیار طبیعی و ظریف', 'درک عالی مفاهیم ضمنی و هوش هیجانی', 'کاهش قابل توجه توهمات'],
+                    weaknesses: ['هزینه بسیار بالا', 'محدودیت‌های شدید استفاده', 'در حال حذف از API و پلتفرم'],
+                    capabilities: { speed: 6, cost: 2, creativity: 10, reasoning: 8, context: 6 }
+                }
+            };
+
+            const benchmarkData = {
+                'MMLU': { 'gpt-4o': 88.7, 'gpt-4.1': 90.2, 'o3': null, 'gpt-4.5': 90.8 },
+                'GPQA Diamond': { 'gpt-4o': 74.8, 'gpt-4.1': 67.0, 'o3': 87.7, 'gpt-4.5': 71.4 },
+                'HumanEval': { 'gpt-4o': 90.2, 'gpt-4.1': 96.0, 'o3': 99.0, 'gpt-4.5': 88.0 },
+                'SWE-bench Verified': { 'gpt-4o': 33.2, 'gpt-4.1': 54.6, 'o3': 71.7, 'gpt-4.5': 38.0 },
+                'IFEval': { 'gpt-4o': 81.0, 'gpt-4.1': 87.4, 'o3': null, 'gpt-4.5': 88.2 }
+            };
+
+            const taskRecommendations = {
+                'realtime': { model: 'gpt-4o', text: 'GPT-4o با سرعت بالا و تأخیر کم، بهترین گزینه برای ساخت چت‌بات‌های پاسخگو و دستیارهای صوتی آنی است.' },
+                'creative': { model: 'gpt-4.5', text: 'GPT-4.5 برای نوشتن خلاق، طوفان فکری و مکالمات ظریف طراحی شده. اگر در دسترس نیست، GPT-4o جایگزین بسیار خوبی است.' },
+                'coding': { model: 'gpt-4.1', text: 'GPT-4.1 به طور خاص برای کدنویسی و پیروی دقیق از دستورالعمل‌ها بهینه‌سازی شده و در بنچمارک‌های مهندسی نرم‌افزار پیشتاز است.' },
+                'research': { model: 'o3', text: 'o3 با قابلیت استدلال عمیق، دقت بی‌نظیری در مسائل علمی، ریاضیات و وظایف پیچیده‌ای که صحت در آن‌ها حیاتی است، ارائه می‌دهد.' },
+                'long_context': { model: 'gpt-4.1', text: 'GPT-4.1 با پنجره زمینه ۱ میلیون توکنی، تنها گزینه برای تحلیل کامل اسناد بسیار حجیم، کتاب‌ها یا کل پایگاه‌های کد در یک مرحله است.' }
+            };
+
+            let recommendationChartInstance = null;
+            let benchmarkChartInstance = null;
+
+            // --- Recommendation Chart Logic ---
+            const recommendationCard = document.getElementById('recommendation-card');
+            const recommendedModelName = document.getElementById('recommended-model-name');
+            const recommendationText = document.getElementById('recommendation-text');
+            const taskButtons = document.querySelectorAll('.task-button');
+
+            taskButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const task = button.dataset.task;
+                    const recommendation = taskRecommendations[task];
+                    const model = modelData[recommendation.model];
+
+                    taskButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    recommendedModelName.textContent = model.name;
+                    recommendationText.textContent = recommendation.text;
+                    recommendationCard.classList.remove('hidden');
+
+                    if (recommendationChartInstance) {
+                        recommendationChartInstance.destroy();
+                    }
+                    
+                    const ctx = document.getElementById('recommendation-chart').getContext('2d');
+                    recommendationChartInstance = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['سرعت', 'هزینه', 'خلاقیت', 'استدلال', 'ظرفیت زمینه'],
+                            datasets: [{
+                                label: model.name,
+                                data: Object.values(model.capabilities),
+                                backgroundColor: 'rgba(125, 124, 122, 0.2)',
+                                borderColor: 'rgba(125, 124, 122, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(125, 124, 122, 1)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                             scales: {
+                                r: {
+                                    angleLines: { color: '#EAE3DC' },
+                                    grid: { color: '#EAE3DC' },
+                                    pointLabels: { font: { family: "Vazirmatn", size: 12 }, color: '#434242' },
+                                    ticks: {
+                                        backdropColor: 'transparent',
+                                        stepSize: 2,
+                                        color: '#7D7C7A'
+                                    },
+                                    suggestedMin: 0,
+                                    suggestedMax: 10
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                         font: { family: "Vazirmatn" }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
+            // --- Benchmark Chart Logic ---
+            const benchmarkSelector = document.getElementById('benchmark-selector');
+
+            const createBenchmarkChart = (benchmarkKey) => {
+                const data = benchmarkData[benchmarkKey];
+                const chartData = {
+                    labels: [],
+                    datasets: [{
+                        label: 'امتیاز (٪)',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(118, 169, 255, 0.6)',
+                            'rgba(91, 185, 127, 0.6)',
+                            'rgba(255, 159, 64, 0.6)',
+                            'rgba(153, 102, 255, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(118, 169, 255, 1)',
+                            'rgba(91, 185, 127, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+
+                for (const modelKey in data) {
+                    if (data[modelKey] !== null) {
+                        chartData.labels.push(modelData[modelKey].name);
+                        chartData.datasets[0].data.push(data[modelKey]);
+                    }
+                }
+                
+                if (benchmarkChartInstance) {
+                    benchmarkChartInstance.destroy();
+                }
+
+                const ctx = document.getElementById('benchmark-chart').getContext('2d');
+                benchmarkChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: '#EAE3DC' },
+                                ticks: { color: '#434242', font: { family: "Vazirmatn" } }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { color: '#434242', font: { family: "Vazirmatn", size: 14 } }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                rtl: true,
+                                textDirection: 'rtl',
+                                titleFont: { family: "Vazirmatn" },
+                                bodyFont: { family: "Vazirmatn" }
+                            }
+                        }
+                    }
+                });
+            };
+
+            benchmarkSelector.addEventListener('change', (e) => {
+                createBenchmarkChart(e.target.value);
+            });
+
+            // --- Tabbed Profiles Logic ---
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContentContainer = document.getElementById('tab-content');
+
+            const createTabContent = (modelKey) => {
+                const model = modelData[modelKey];
+                const strengthsHTML = model.strengths.map(item => `<li class="flex items-start"><span class="text-green-500 mr-2 ml-2">✓</span>${item}</li>`).join('');
+                const weaknessesHTML = model.weaknesses.map(item => `<li class="flex items-start"><span class="text-red-500 mr-2 ml-2">✗</span>${item}</li>`).join('');
+
+                return `
+                    <div class="prose max-w-none prose-vazir">
+                        <h3 class="font-bold text-xl">${model.persona}</h3>
+                        <p>${model.description}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <h4 class="font-bold mb-2">نقاط قوت</h4>
+                                <ul class="space-y-2 list-none p-0">${strengthsHTML}</ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">نقاط ضعف</h4>
+                                <ul class="space-y-2 list-none p-0">${weaknessesHTML}</ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const modelKey = button.dataset.tab;
+                    tabContentContainer.innerHTML = createTabContent(modelKey);
+                });
+            });
+
+
+            // Initial Load
+            createBenchmarkChart('MMLU');
+            document.querySelector('.tab-button[data-tab="gpt-4o"]').click();
+            document.querySelector('.task-button[data-task="realtime"]').click(); // Show a default recommendation
+            
+            // Smooth scroll for nav links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+        });
+    </script>
+
+</body>
+</html>
